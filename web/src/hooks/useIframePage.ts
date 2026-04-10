@@ -24,6 +24,8 @@ export function useIframePage(iframeRef: RefObject<HTMLIFrameElement | null>, pr
         }
         relative = relative.replace(/^\//, '');
         if (!relative || relative === '') relative = 'index.html';
+        // Append full query string and hash as page identifier
+        if (url.search) relative += url.search;
         if (url.hash) relative += url.hash;
         setPageId((prev) => (prev !== relative ? relative : prev));
       } catch {

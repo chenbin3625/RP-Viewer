@@ -86,7 +86,7 @@ export default function Preview() {
     },
   ];
 
-  const TOOLBAR_HEIGHT = 56;
+  const TOOLBAR_HEIGHT = 40;
   const unresolvedCount = pageComments.filter((c) => !c.resolved).length;
 
   return (
@@ -95,7 +95,7 @@ export default function Preview() {
       <div
         style={{
           height: TOOLBAR_HEIGHT,
-          padding: '0 16px',
+          padding: '0 12px',
           display: 'flex',
           alignItems: 'center',
           borderBottom: '1px solid #f0f0f0',

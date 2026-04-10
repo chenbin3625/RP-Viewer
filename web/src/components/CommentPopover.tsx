@@ -29,10 +29,12 @@ export default function CommentPopover(props: CommentPopoverProps) {
   const [content, setContent] = useState('');
 
   // Position the popover to the right of the pin, within viewport
+  // pointerEvents: auto ensures the card is interactive even when the overlay is pointer-events: none
   const style: React.CSSProperties = {
     position: 'absolute',
     zIndex: 100,
     width: 280,
+    pointerEvents: 'auto',
   };
 
   if (props.mode === 'new') {
