@@ -24,7 +24,7 @@ export default function Preview() {
   const parentPath = parts.slice(0, -1).join('/');
 
   // Hooks
-  const pageId = useIframePage(iframeRef, currentPath);
+  const pageId = useIframePage(iframeRef);
   const {
     pageComments,
     allComments,
