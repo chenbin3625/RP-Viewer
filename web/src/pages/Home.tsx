@@ -12,7 +12,7 @@ export default function Home() {
   const location = useLocation();
 
   // Extract path from URL: /browse/ProjectA/Mobile -> "ProjectA/Mobile"
-  const currentPath = location.pathname.replace(/^\/browse\/?/, '').replace(/^\//, '');
+  const currentPath = decodeURIComponent(location.pathname.replace(/^\/browse\/?/, '').replace(/^\//, ''));
 
   const [data, setData] = useState<BrowseResponse | null>(null);
   const [loading, setLoading] = useState(true);
