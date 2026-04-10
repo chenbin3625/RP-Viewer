@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { Comment, CreateCommentPayload } from '../api';
 import CommentPin from './CommentPin';
 import CommentPopover from './CommentPopover';
@@ -56,17 +56,24 @@ export default function CommentOverlay({
     }
   }, [commentMode]);
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
+  // Listen for clicks inside the iframe (same-origin) to create comments.
+  // This way the overlay stays pointer-events:none and doesn't block
+  // scrolling, middle-click, or any other interaction.
+  const handleIframeClick = useCallback((e: MouseEvent) => {
     if (!commentMode) return;
+    // Only left click (button 0)
+    if (e.button !== 0) return;
 
-    // Don't create comment if clicking on a pin or popover
-    if ((e.target as HTMLElement).closest('[data-comment-pin]') || (e.target as HTMLElement).closest('.ant-card')) {
-      return;
-    }
+    e.preventDefault();
+    e.stopPropagation();
 
-    const rect = overlayRef.current!.getBoundingClientRect();
-    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    const rect = overlay.getBoundingClientRect();
+
+    // The iframe fills the overlay area, so iframe viewport coords map directly
+    const xPercent = (e.clientX / rect.width) * 100;
+    const yPercent = (e.clientY / rect.height) * 100;
 
     let scrollTop = 0;
     try {
@@ -76,7 +83,42 @@ export default function CommentOverlay({
 
     setActiveCommentId(null);
     setNewCommentPos({ xPercent, yPercent, scrollTop });
-  };
+  }, [commentMode, iframeRef]);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const attach = () => {
+      try {
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.addEventListener('click', handleIframeClick, true);
+        }
+      } catch {}
+    };
+
+    // Attach on load and re-attach when page changes
+    iframe.addEventListener('load', attach);
+    attach();
+
+    return () => {
+      iframe.removeEventListener('load', attach);
+      try {
+        iframe.contentWindow?.document?.removeEventListener('click', handleIframeClick, true);
+      } catch {}
+    };
+  }, [iframeRef, handleIframeClick]);
+
+  // Also update cursor inside iframe when comment mode changes
+  useEffect(() => {
+    try {
+      const doc = iframeRef.current?.contentWindow?.document;
+      if (doc) {
+        doc.body.style.cursor = commentMode ? 'crosshair' : '';
+      }
+    } catch {}
+  }, [commentMode, iframeRef, currentPageId]);
 
   const handleSubmitNew = async (content: string) => {
     if (!newCommentPos) return;
@@ -93,7 +135,7 @@ export default function CommentOverlay({
 
   // Filter visible comments: only show if scroll position is close enough
   const visibleComments = comments.filter((c) => {
-    if (viewportHeight === 0) return true; // show all if we can't determine viewport
+    if (viewportHeight === 0) return true;
     const scrollDiff = Math.abs(iframeScrollTop - c.scrollTop);
     return scrollDiff < viewportHeight;
   });
@@ -112,12 +154,10 @@ export default function CommentOverlay({
   return (
     <div
       ref={overlayRef}
-      onClick={handleOverlayClick}
       style={{
         position: 'absolute',
         inset: 0,
-        pointerEvents: commentMode ? 'auto' : 'none',
-        cursor: commentMode ? 'crosshair' : 'default',
+        pointerEvents: 'none',
         zIndex: 5,
       }}
     >
