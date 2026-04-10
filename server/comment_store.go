@@ -1,7 +1,9 @@
 package server
 
 import (
+	"crypto/md5"
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -36,27 +38,8 @@ func generateUUID() string {
 }
 
 func pageIDToFilename(pageID string) string {
-	// Percent-encode chars that are problematic in filenames
-	name := strings.ReplaceAll(pageID, "%", "%25") // must be first
-	name = strings.ReplaceAll(name, "/", "%2F")
-	name = strings.ReplaceAll(name, "#", "%23")
-	name = strings.ReplaceAll(name, "?", "%3F")
-	name = strings.ReplaceAll(name, "=", "%3D")
-	name = strings.ReplaceAll(name, "&", "%26")
-	return "_" + name + ".json"
-}
-
-func filenameToPageID(filename string) string {
-	// Strip prefix "_" and suffix ".json"
-	name := strings.TrimPrefix(filename, "_")
-	name = strings.TrimSuffix(name, ".json")
-	name = strings.ReplaceAll(name, "%26", "&")
-	name = strings.ReplaceAll(name, "%3D", "=")
-	name = strings.ReplaceAll(name, "%3F", "?")
-	name = strings.ReplaceAll(name, "%23", "#")
-	name = strings.ReplaceAll(name, "%2F", "/")
-	name = strings.ReplaceAll(name, "%25", "%") // must be last
-	return name
+	hash := md5.Sum([]byte(pageID))
+	return hex.EncodeToString(hash[:]) + ".json"
 }
 
 // commentsDir returns the .comments/ directory path for a prototype, with security validation
@@ -166,8 +149,8 @@ func (s *Server) findAndRemoveComment(prototypePath, commentID string) error {
 		for i, c := range comments {
 			if c.ID == commentID {
 				comments = append(comments[:i], comments[i+1:]...)
-				pageID := filenameToPageID(entry.Name())
-				return s.writePageComments(prototypePath, pageID, comments)
+				// Use pageId from the comment itself to derive the filename
+				return s.writePageComments(prototypePath, c.PageID, comments)
 			}
 		}
 	}
@@ -199,8 +182,8 @@ func (s *Server) findAndUpdateComment(prototypePath, commentID string, updateFn 
 		for i, c := range comments {
 			if c.ID == commentID {
 				updateFn(&comments[i])
-				pageID := filenameToPageID(entry.Name())
-				if err := s.writePageComments(prototypePath, pageID, comments); err != nil {
+				// Use pageId from the comment itself to derive the filename
+				if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
 					return nil, err
 				}
 				return &comments[i], nil
