@@ -7,6 +7,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 )
 
 type Server struct {
@@ -15,6 +16,7 @@ type Server struct {
 	mux          *http.ServeMux
 	webAssets    embed.FS
 	devMode      bool
+	commentMu    sync.Mutex
 }
 
 func New(prototypeDir string, port int, webAssets embed.FS, devMode bool) *Server {
@@ -31,6 +33,7 @@ func New(prototypeDir string, port int, webAssets embed.FS, devMode bool) *Serve
 
 func (s *Server) routes() {
 	s.mux.HandleFunc("/api/browse", s.handleBrowse)
+	s.mux.HandleFunc("/api/comments", s.handleComments)
 	s.mux.Handle("/prototypes/", http.StripPrefix("/prototypes/", http.FileServer(http.Dir(s.prototypeDir))))
 
 	if s.devMode {
