@@ -68,9 +68,9 @@ export default function Home() {
       {data?.items.length === 0 ? (
         <Empty description="此目录下没有原型或子文件夹" />
       ) : (
-        <Row gutter={[24, 24]}>
+        <Row gutter={[16, 16]}>
           {data?.items.map((item) => (
-            <Col key={item.path} xs={24} sm={12} md={8} lg={6}>
+            <Col key={item.path} xs={24} sm={12} lg={8}>
               <PrototypeCard item={item} onClick={() => handleItemClick(item)} />
             </Col>
           ))}
