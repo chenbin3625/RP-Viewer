@@ -10,8 +10,10 @@ interface CommentOverlayProps {
   currentPageId: string;
   nickname: string;
   onAddComment: (payload: CreateCommentPayload) => Promise<Comment>;
+  onEditComment: (id: string, content: string) => Promise<void>;
   onResolve: (id: string, resolved: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onReply: (parentId: string, content: string, author: string) => Promise<void>;
 }
 
 export default function CommentOverlay({
@@ -21,8 +23,10 @@ export default function CommentOverlay({
   currentPageId,
   nickname,
   onAddComment,
+  onEditComment,
   onResolve,
   onDelete,
+  onReply,
 }: CommentOverlayProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -178,11 +182,14 @@ export default function CommentOverlay({
               <CommentPopover
                 mode="view"
                 comment={{ ...comment, xPercent: pos.xPercent, yPercent: pos.yPercent }}
+                nickname={nickname}
+                onEdit={(content) => onEditComment(comment.id, content)}
                 onResolve={() => onResolve(comment.id, !comment.resolved)}
                 onDelete={async () => {
                   await onDelete(comment.id);
                   setActiveCommentId(null);
                 }}
+                onReply={(content, author) => onReply(comment.id, content, author)}
                 onClose={() => setActiveCommentId(null)}
               />
             )}

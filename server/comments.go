@@ -55,6 +55,13 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If parentId is present, this is a reply to an existing comment
+	parentID := r.URL.Query().Get("parentId")
+	if parentID != "" {
+		s.handleAddReply(w, r, prototype, parentID)
+		return
+	}
+
 	var comment Comment
 	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -63,6 +70,7 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 
 	comment.ID = generateUUID()
 	comment.CreatedAt = time.Now().Format(time.RFC3339)
+	comment.Replies = []Reply{}
 	if comment.Author == "" {
 		comment.Author = "匿名"
 	}
@@ -85,6 +93,40 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(comment)
+}
+
+func (s *Server) handleAddReply(w http.ResponseWriter, r *http.Request, prototype, parentID string) {
+	var body struct {
+		Content string `json:"content"`
+		Author  string `json:"author"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	reply := Reply{
+		ID:        generateUUID(),
+		Content:   body.Content,
+		Author:    body.Author,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	if reply.Author == "" {
+		reply.Author = "匿名"
+	}
+
+	s.commentMu.Lock()
+	defer s.commentMu.Unlock()
+
+	updated, err := s.findAndAddReply(prototype, parentID, reply)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(updated)
 }
 
 func (s *Server) handleUpdateComment(w http.ResponseWriter, r *http.Request) {

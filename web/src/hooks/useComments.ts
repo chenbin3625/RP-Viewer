@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getComments, createComment, updateComment, deleteComment, type Comment, type CreateCommentPayload } from '../api';
+import { getComments, createComment, updateComment, deleteComment, addReply, type Comment, type CreateCommentPayload } from '../api';
 
 export function useComments(prototypePath: string, currentPageId: string) {
   const [pageComments, setPageComments] = useState<Comment[]>([]);
@@ -37,6 +37,13 @@ export function useComments(prototypePath: string, currentPageId: string) {
     return comment;
   }, [prototypePath]);
 
+  const editComment = useCallback(async (id: string, content: string) => {
+    const updated = await updateComment(prototypePath, id, { content });
+    setPageComments((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, content: updated.content } : c))
+    );
+  }, [prototypePath]);
+
   const toggleResolved = useCallback(async (id: string, resolved: boolean) => {
     await updateComment(prototypePath, id, { resolved });
     setPageComments((prev) =>
@@ -49,13 +56,22 @@ export function useComments(prototypePath: string, currentPageId: string) {
     setPageComments((prev) => prev.filter((c) => c.id !== id));
   }, [prototypePath]);
 
+  const replyToComment = useCallback(async (parentId: string, content: string, author: string) => {
+    const updated = await addReply(prototypePath, parentId, content, author);
+    setPageComments((prev) =>
+      prev.map((c) => (c.id === parentId ? updated : c))
+    );
+  }, [prototypePath]);
+
   return {
     pageComments,
     allComments,
     loading,
     addComment,
+    editComment,
     toggleResolved,
     removeComment,
+    replyToComment,
     refreshPageComments,
     refreshAllComments,
   };

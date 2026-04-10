@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+type Reply struct {
+	ID        string `json:"id"`
+	Content   string `json:"content"`
+	Author    string `json:"author"`
+	CreatedAt string `json:"createdAt"`
+}
+
 type Comment struct {
 	ID        string  `json:"id"`
 	PageID    string  `json:"pageId"`
@@ -22,6 +29,7 @@ type Comment struct {
 	Author    string  `json:"author"`
 	CreatedAt string  `json:"createdAt"`
 	Resolved  bool    `json:"resolved"`
+	Replies   []Reply `json:"replies"`
 }
 
 type CommentsResponse struct {
@@ -183,6 +191,43 @@ func (s *Server) findAndUpdateComment(prototypePath, commentID string, updateFn 
 			if c.ID == commentID {
 				updateFn(&comments[i])
 				// Use pageId from the comment itself to derive the filename
+				if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
+					return nil, err
+				}
+				return &comments[i], nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("comment not found: %s", commentID)
+}
+
+func (s *Server) findAndAddReply(prototypePath, commentID string, reply Reply) (*Comment, error) {
+	dir, err := s.commentsDir(prototypePath)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			continue
+		}
+		var comments []Comment
+		if err := json.Unmarshal(data, &comments); err != nil {
+			continue
+		}
+		for i, c := range comments {
+			if c.ID == commentID {
+				if comments[i].Replies == nil {
+					comments[i].Replies = []Reply{}
+				}
+				comments[i].Replies = append(comments[i].Replies, reply)
 				if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
 					return nil, err
 				}

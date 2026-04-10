@@ -5,14 +5,14 @@ import { HomeOutlined } from '@ant-design/icons';
 import { browse, type BrowseResponse } from '../api';
 import PrototypeCard from '../components/PrototypeCard';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract path from URL: /browse/ProjectA/Mobile -> "ProjectA/Mobile"
   const currentPath = decodeURIComponent(location.pathname.replace(/^\/browse\/?/, '').replace(/^\//, ''));
+  const isRoot = !currentPath;
 
   const [data, setData] = useState<BrowseResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,31 +51,61 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 120 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 200 }}>
         <Spin size="large" />
       </div>
     );
   }
 
+  const pageTitle = data?.breadcrumbs?.length && data.breadcrumbs.length > 1
+    ? data.breadcrumbs[data.breadcrumbs.length - 1].name
+    : null;
+
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
-      <Breadcrumb items={breadcrumbItems} style={{ marginBottom: 16 }} />
-      <Title level={3} style={{ marginBottom: 24 }}>
-        {data?.breadcrumbs?.length && data.breadcrumbs.length > 1
-          ? data.breadcrumbs[data.breadcrumbs.length - 1].name
-          : '全部原型'}
-      </Title>
-      {data?.items.length === 0 ? (
-        <Empty description="此目录下没有原型或子文件夹" />
-      ) : (
-        <Row gutter={[16, 16]}>
-          {data?.items.map((item) => (
-            <Col key={item.path} xs={24} sm={12} lg={8}>
-              <PrototypeCard item={item} onClick={() => handleItemClick(item)} />
-            </Col>
-          ))}
-        </Row>
-      )}
+    <div style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+      {/* Header area */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        padding: isRoot ? '48px 24px 40px' : '24px 24px 20px',
+        transition: 'padding 0.3s',
+      }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {isRoot ? (
+            <>
+              <Title level={2} style={{ color: '#fff', marginBottom: 4, fontWeight: 700, letterSpacing: 1 }}>
+                Seclead-RP
+              </Title>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
+                本地原型在线查看及评论
+              </Text>
+            </>
+          ) : (
+            <>
+              <Breadcrumb items={breadcrumbItems} style={{ marginBottom: 8 }}
+                separator={<span style={{ color: 'rgba(255,255,255,0.4)' }}>/</span>}
+              />
+              <Title level={4} style={{ color: '#fff', marginBottom: 0 }}>
+                {pageTitle}
+              </Title>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 48px' }}>
+        {data?.items.length === 0 ? (
+          <Empty description="此目录下没有原型或子文件夹" style={{ paddingTop: 80 }} />
+        ) : (
+          <Row gutter={[16, 16]}>
+            {data?.items.map((item) => (
+              <Col key={item.path} xs={24} sm={12} lg={8}>
+                <PrototypeCard item={item} onClick={() => handleItemClick(item)} />
+              </Col>
+            ))}
+          </Row>
+        )}
+      </div>
     </div>
   );
 }

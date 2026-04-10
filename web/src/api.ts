@@ -28,6 +28,13 @@ export async function browse(path: string = ''): Promise<BrowseResponse> {
 
 // --- Comment types ---
 
+export interface Reply {
+  id: string;
+  content: string;
+  author: string;
+  createdAt: string;
+}
+
 export interface Comment {
   id: string;
   pageId: string;
@@ -38,6 +45,7 @@ export interface Comment {
   author: string;
   createdAt: string;
   resolved: boolean;
+  replies: Reply[];
 }
 
 export interface CommentsResponse {
@@ -88,4 +96,15 @@ export async function deleteComment(prototype: string, id: string): Promise<void
   const params = new URLSearchParams({ prototype, id });
   const res = await fetch(`/api/comments?${params}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Delete comment failed: ${res.statusText}`);
+}
+
+export async function addReply(prototype: string, parentId: string, content: string, author: string): Promise<Comment> {
+  const params = new URLSearchParams({ prototype, parentId });
+  const res = await fetch(`/api/comments?${params}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, author }),
+  });
+  if (!res.ok) throw new Error(`Add reply failed: ${res.statusText}`);
+  return res.json();
 }

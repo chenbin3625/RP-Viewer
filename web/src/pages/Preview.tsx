@@ -29,8 +29,10 @@ export default function Preview() {
     pageComments,
     allComments,
     addComment,
+    editComment,
     toggleResolved,
     removeComment,
+    replyToComment,
     refreshAllComments,
   } = useComments(currentPath, pageId);
   const { nickname, displayName, updateNickname } = useNickname();
@@ -169,8 +171,10 @@ export default function Preview() {
           currentPageId={pageId}
           nickname={displayName}
           onAddComment={addComment}
+          onEditComment={editComment}
           onResolve={toggleResolved}
           onDelete={removeComment}
+          onReply={replyToComment}
         />
       </div>
 
