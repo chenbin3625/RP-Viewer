@@ -15,7 +15,39 @@ interface CommentDrawerProps {
 
 interface PageGroup {
   pageId: string;
+  label: string;
   comments: Comment[];
+}
+
+/** Turn a full iframe URL into a short readable label */
+function formatPageLabel(pageId: string): string {
+  try {
+    const url = new URL(pageId);
+    // Extract the filename from pathname (last segment)
+    const segments = decodeURIComponent(url.pathname).split('/').filter(Boolean);
+    const file = segments[segments.length - 1] || 'index.html';
+
+    // Collect meaningful query params for display
+    const parts: string[] = [];
+    const viewMode = url.searchParams.get('view_mode');
+    const screen = url.searchParams.get('screen');
+    if (viewMode) parts.push(viewMode);
+    if (screen) parts.push(screen);
+
+    // If no known params, show any params briefly
+    if (parts.length === 0 && url.search) {
+      for (const [k, v] of url.searchParams) {
+        parts.push(`${k}=${v.length > 8 ? v.slice(0, 8) + '…' : v}`);
+        if (parts.length >= 2) break;
+      }
+    }
+
+    const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+    return file + suffix;
+  } catch {
+    // Not a valid URL, return as-is
+    return pageId;
+  }
 }
 
 export default function CommentDrawer({ open, onClose, allComments, onNavigate, onRefresh }: CommentDrawerProps) {
@@ -31,7 +63,7 @@ export default function CommentDrawer({ open, onClose, allComments, onNavigate, 
     groupMap.get(c.pageId)!.push(c);
   }
   for (const [pageId, comments] of groupMap) {
-    groups.push({ pageId, comments: comments.sort((a, b) => a.createdAt.localeCompare(b.createdAt)) });
+    groups.push({ pageId, label: formatPageLabel(pageId), comments: comments.sort((a, b) => a.createdAt.localeCompare(b.createdAt)) });
   }
   groups.sort((a, b) => a.pageId.localeCompare(b.pageId));
 
@@ -58,7 +90,7 @@ export default function CommentDrawer({ open, onClose, allComments, onNavigate, 
         groups.map((group) => (
           <div key={group.pageId} style={{ marginBottom: 24 }}>
             <Text strong style={{ display: 'block', marginBottom: 8, color: '#8c8c8c', fontSize: 12 }}>
-              {group.pageId}
+              {group.label}
             </Text>
             <List
               size="small"
