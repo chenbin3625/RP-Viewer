@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -27,11 +26,5 @@ func (s *Server) routes() {
 }
 
 func (s *Server) ListenAndServe(addr string) error {
-	fmt.Printf("Listening on %s\n", addr)
 	return http.ListenAndServe(addr, s.mux)
-}
-
-func (s *Server) handleBrowse(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"path":"","breadcrumbs":[],"items":[]}`))
 }
