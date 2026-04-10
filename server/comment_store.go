@@ -36,9 +36,13 @@ func generateUUID() string {
 }
 
 func pageIDToFilename(pageID string) string {
-	// Encode special chars that are problematic in filenames
-	name := strings.ReplaceAll(pageID, "/", "%2F")
+	// Percent-encode chars that are problematic in filenames
+	name := strings.ReplaceAll(pageID, "%", "%25") // must be first
+	name = strings.ReplaceAll(name, "/", "%2F")
 	name = strings.ReplaceAll(name, "#", "%23")
+	name = strings.ReplaceAll(name, "?", "%3F")
+	name = strings.ReplaceAll(name, "=", "%3D")
+	name = strings.ReplaceAll(name, "&", "%26")
 	return "_" + name + ".json"
 }
 
@@ -46,8 +50,12 @@ func filenameToPageID(filename string) string {
 	// Strip prefix "_" and suffix ".json"
 	name := strings.TrimPrefix(filename, "_")
 	name = strings.TrimSuffix(name, ".json")
-	name = strings.ReplaceAll(name, "%2F", "/")
+	name = strings.ReplaceAll(name, "%26", "&")
+	name = strings.ReplaceAll(name, "%3D", "=")
+	name = strings.ReplaceAll(name, "%3F", "?")
 	name = strings.ReplaceAll(name, "%23", "#")
+	name = strings.ReplaceAll(name, "%2F", "/")
+	name = strings.ReplaceAll(name, "%25", "%") // must be last
 	return name
 }
 
