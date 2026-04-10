@@ -1,5 +1,5 @@
-# Root directory containing prototype folders
-prototype_dir: ./testdata
+# 原型文件的根目录（每个子文件夹是一个原型或分类）
+prototype_dir: ./prototypes
 
-# Server port
+# 服务端口
 port: 8080
