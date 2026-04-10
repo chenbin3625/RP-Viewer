@@ -1,0 +1,5 @@
+# Root directory containing prototype folders
+prototype_dir: ./testdata
+
+# Server port
+port: 8080
