@@ -44,11 +44,17 @@ export default function CommentOverlay({
     return () => clearInterval(interval);
   }, [iframeRef]);
 
-  // Close popover when page changes
+  // Close popovers when page changes or comment mode turns off
   useEffect(() => {
     setActiveCommentId(null);
     setNewCommentPos(null);
   }, [currentPageId]);
+
+  useEffect(() => {
+    if (!commentMode) {
+      setNewCommentPos(null);
+    }
+  }, [commentMode]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (!commentMode) return;
