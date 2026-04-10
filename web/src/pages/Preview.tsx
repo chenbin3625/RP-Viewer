@@ -47,13 +47,8 @@ export default function Preview() {
 
   const handleNavigateToComment = (comment: Comment) => {
     try {
-      const protoRoot = '/prototypes/' + parts.map(encodeURIComponent).join('/') + '/';
-      const pageIdParts = comment.pageId.split('#');
-      const pagePath = pageIdParts[0];
-      const hash = pageIdParts[1] ? '#' + pageIdParts[1] : '';
-      const targetUrl = protoRoot + pagePath + hash;
       if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.location.href = targetUrl;
+        iframeRef.current.contentWindow.location.href = comment.pageId;
       }
     } catch (e) {
       console.error('Failed to navigate to comment:', e);
