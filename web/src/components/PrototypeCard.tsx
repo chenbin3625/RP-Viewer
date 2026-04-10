@@ -1,4 +1,4 @@
-import { Card, Typography, Badge } from 'antd';
+import { Card, Typography, Tag } from 'antd';
 import { FolderOutlined, FileOutlined } from '@ant-design/icons';
 import type { BrowseItem } from '../api';
 
@@ -26,46 +26,50 @@ export default function PrototypeCard({ item, onClick }: Props) {
   const showBadge = item.type === 'folder' && item.childCount !== undefined;
 
   return (
-    <Badge count={showBadge ? `${item.childCount} 项` : 0} size="small" offset={[-8, 8]} style={{ backgroundColor: '#1890ff' }}>
-      <Card
-        hoverable
-        onClick={onClick}
-        style={{ height: '100%' }}
-        styles={{ body: { display: 'flex', alignItems: 'stretch', padding: 0, height: '100%' } }}
-      >
-        <div style={{
-          width: 72,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRight: '1px solid #f0f0f0',
-          background: '#fafafa',
-        }}>
-          {icon}
-        </div>
-        <div style={{
-          flex: 1,
-          padding: '12px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: hasDesc ? 'flex-start' : 'center',
-          minWidth: 0,
-        }}>
-          <Text strong ellipsis style={{ fontSize: 14 }}>
-            {item.name}
-          </Text>
-          {hasDesc && (
-            <Paragraph
-              type="secondary"
-              ellipsis={{ rows: 2 }}
-              style={{ marginBottom: 0, marginTop: 4, fontSize: 12 }}
-            >
-              {item.description}
-            </Paragraph>
-          )}
-        </div>
-      </Card>
-    </Badge>
+    <Card
+      hoverable
+      onClick={onClick}
+      style={{ height: 72 }}
+      styles={{ body: { display: 'flex', alignItems: 'stretch', padding: 0, height: '100%', position: 'relative' } }}
+    >
+      {showBadge && (
+        <Tag color="blue" style={{ position: 'absolute', top: 4, right: 4, margin: 0, fontSize: 11, lineHeight: '18px', padding: '0 6px' }}>
+          {item.childCount} 项
+        </Tag>
+      )}
+      <div style={{
+        width: 72,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRight: '1px solid #f0f0f0',
+        background: '#fafafa',
+      }}>
+        {icon}
+      </div>
+      <div style={{
+        flex: 1,
+        padding: '8px 16px',
+        paddingRight: showBadge ? 48 : 16,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: hasDesc ? 'center' : 'center',
+        minWidth: 0,
+      }}>
+        <Text strong ellipsis style={{ fontSize: 14 }}>
+          {item.name}
+        </Text>
+        {hasDesc && (
+          <Paragraph
+            type="secondary"
+            ellipsis={{ rows: 1 }}
+            style={{ marginBottom: 0, marginTop: 2, fontSize: 12 }}
+          >
+            {item.description}
+          </Paragraph>
+        )}
+      </div>
+    </Card>
   );
 }
