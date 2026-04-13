@@ -109,6 +109,28 @@ port: 8080
 - **昵称**：点击用户名可设置昵称，留空为匿名
 - 评论数据以 JSON 文件存储在各原型的 `.comments/` 目录中
 
+## Docker 部署
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -v /path/to/prototypes:/data/prototypes \
+  chenbin3625/rp-viewer \
+  -config /app/config.yaml
+```
+
+自定义配置文件：
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -v /path/to/prototypes:/data/prototypes \
+  -v /path/to/config.yaml:/app/config.yaml \
+  chenbin3625/rp-viewer
+```
+
+> 镜像支持 `linux/amd64` 和 `linux/arm64` 平台。
+
 ## 从源码构建
 
 需要 Go 1.21+ 和 Node.js 22+：
