@@ -129,9 +129,10 @@ jobs:
 
       - name: Update DockerHub description
         uses: peter-evans/dockerhub-description@v4
+        continue-on-error: true
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
           repository: chenbin3625/rp-viewer
           readme-filepath: DOCKER_README.md
 
