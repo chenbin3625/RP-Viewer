@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 	"proto-viewer/server"
@@ -20,16 +21,29 @@ func main() {
 	dev := flag.Bool("dev", false, "enable dev mode (proxy to Vite)")
 	flag.Parse()
 
-	data, err := os.ReadFile(*configPath)
-	if err != nil {
-		log.Fatalf("Failed to read config: %v", err)
-	}
-
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		log.Fatalf("Failed to parse config: %v", err)
+
+	// Try loading config file; ignore error if file doesn't exist and env vars are set
+	data, err := os.ReadFile(*configPath)
+	if err == nil {
+		if err := yaml.Unmarshal(data, &cfg); err != nil {
+			log.Fatalf("Failed to parse config: %v", err)
+		}
 	}
 
+	// Environment variables override config file
+	if v := os.Getenv("PROTOTYPE_DIR"); v != "" {
+		cfg.PrototypeDir = v
+	}
+	if v := os.Getenv("PORT"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil {
+			cfg.Port = p
+		}
+	}
+
+	if cfg.PrototypeDir == "" {
+		cfg.PrototypeDir = "./prototypes"
+	}
 	if cfg.Port == 0 {
 		cfg.Port = 8080
 	}

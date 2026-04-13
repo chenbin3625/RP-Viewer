@@ -20,10 +20,10 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 COPY --from=backend /app/proto-viewer .
+RUN mkdir -p /data/prototypes
 
-# Default config pointing to /data/prototypes
-RUN printf 'prototype_dir: /data/prototypes\nport: 8080\n' > config.yaml \
-    && mkdir -p /data/prototypes
+ENV PROTOTYPE_DIR=/data/prototypes
+ENV PORT=8080
 
 EXPOSE 8080
 
