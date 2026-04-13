@@ -115,17 +115,21 @@ port: 8080
 docker run -d \
   -p 8080:8080 \
   -v /path/to/prototypes:/data/prototypes \
-  chenbin3625/rp-viewer \
-  -config /app/config.yaml
+  chenbin3625/rp-viewer
 ```
 
-自定义配置文件：
+通过环境变量自定义配置：
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `PROTOTYPE_DIR` | `/data/prototypes` | 原型文件根目录 |
+| `PORT` | `8080` | 服务端口 |
 
 ```bash
 docker run -d \
-  -p 8080:8080 \
+  -p 9090:9090 \
+  -e PORT=9090 \
   -v /path/to/prototypes:/data/prototypes \
-  -v /path/to/config.yaml:/app/config.yaml \
   chenbin3625/rp-viewer
 ```
 
