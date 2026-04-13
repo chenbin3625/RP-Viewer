@@ -115,7 +115,7 @@ port: 8080
 docker run -d \
   -p 8080:8080 \
   -v /path/to/prototypes:/data/prototypes \
-  chenbin3625/rp-viewer
+  erikbin/rp-viewer
 ```
 
 通过环境变量自定义配置：
@@ -130,7 +130,7 @@ docker run -d \
   -p 9090:9090 \
   -e PORT=9090 \
   -v /path/to/prototypes:/data/prototypes \
-  chenbin3625/rp-viewer
+  erikbin/rp-viewer
 ```
 
 > 镜像支持 `linux/amd64` 和 `linux/arm64` 平台。
