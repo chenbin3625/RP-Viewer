@@ -127,14 +127,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Update DockerHub description
-        uses: peter-evans/dockerhub-description@v4
-        continue-on-error: true
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: chenbin3625/rp-viewer
-          readme-filepath: DOCKER_README.md
 
   release:
     needs: build-binaries
