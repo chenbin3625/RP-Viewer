@@ -23,12 +23,15 @@ func main() {
 
 	var cfg Config
 
-	// Try loading config file; ignore error if file doesn't exist and env vars are set
+	// Try loading config file; ignore only "not found" so env vars/defaults
+	// can still apply when no config file is present.
 	data, err := os.ReadFile(*configPath)
 	if err == nil {
 		if err := yaml.Unmarshal(data, &cfg); err != nil {
 			log.Fatalf("Failed to parse config: %v", err)
 		}
+	} else if !os.IsNotExist(err) {
+		log.Fatalf("Failed to read config %q: %v", *configPath, err)
 	}
 
 	// Environment variables override config file

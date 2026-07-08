@@ -37,7 +37,7 @@ func (s *Server) handleGetComments(w http.ResponseWriter, r *http.Request) {
 		comments, err = s.readAllComments(prototype)
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, err, "failed to read comments")
 		return
 	}
 
@@ -63,12 +63,17 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var comment Comment
-	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
+	if err := decodeJSON(w, r, &comment); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	comment.ID = generateUUID()
+	id, err := generateUUID()
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err, "failed to generate comment id")
+		return
+	}
+	comment.ID = id
 	comment.CreatedAt = time.Now().Format(time.RFC3339)
 	comment.Replies = []Reply{}
 	if comment.Author == "" {
@@ -80,13 +85,13 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 
 	existing, err := s.readPageComments(prototype, comment.PageID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, err, "failed to read comments")
 		return
 	}
 
 	existing = append(existing, comment)
 	if err := s.writePageComments(prototype, comment.PageID, existing); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, err, "failed to save comment")
 		return
 	}
 
@@ -96,17 +101,24 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAddReply(w http.ResponseWriter, r *http.Request, prototype, parentID string) {
+	page := r.URL.Query().Get("page")
+
 	var body struct {
 		Content string `json:"content"`
 		Author  string `json:"author"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := decodeJSON(w, r, &body); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	id, err := generateUUID()
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err, "failed to generate reply id")
+		return
+	}
 	reply := Reply{
-		ID:        generateUUID(),
+		ID:        id,
 		Content:   body.Content,
 		Author:    body.Author,
 		CreatedAt: time.Now().Format(time.RFC3339),
@@ -118,9 +130,9 @@ func (s *Server) handleAddReply(w http.ResponseWriter, r *http.Request, prototyp
 	s.commentMu.Lock()
 	defer s.commentMu.Unlock()
 
-	updated, err := s.findAndAddReply(prototype, parentID, reply)
+	updated, err := s.findAndAddReply(prototype, parentID, page, reply)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, err, "comment not found")
 		return
 	}
 
@@ -136,12 +148,13 @@ func (s *Server) handleUpdateComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "prototype and id parameters required", http.StatusBadRequest)
 		return
 	}
+	page := r.URL.Query().Get("page")
 
 	var updates struct {
 		Content  *string `json:"content"`
 		Resolved *bool   `json:"resolved"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := decodeJSON(w, r, &updates); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -149,7 +162,7 @@ func (s *Server) handleUpdateComment(w http.ResponseWriter, r *http.Request) {
 	s.commentMu.Lock()
 	defer s.commentMu.Unlock()
 
-	updated, err := s.findAndUpdateComment(prototype, id, func(c *Comment) {
+	updated, err := s.findAndUpdateComment(prototype, id, page, func(c *Comment) {
 		if updates.Content != nil {
 			c.Content = *updates.Content
 		}
@@ -158,7 +171,7 @@ func (s *Server) handleUpdateComment(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, err, "comment not found")
 		return
 	}
 
@@ -173,12 +186,13 @@ func (s *Server) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "prototype and id parameters required", http.StatusBadRequest)
 		return
 	}
+	page := r.URL.Query().Get("page")
 
 	s.commentMu.Lock()
 	defer s.commentMu.Unlock()
 
-	if err := s.findAndRemoveComment(prototype, id); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+	if err := s.findAndRemoveComment(prototype, id, page); err != nil {
+		writeAPIError(w, http.StatusNotFound, err, "comment not found")
 		return
 	}
 

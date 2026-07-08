@@ -1,0 +1,171 @@
+/* =========================================================================
+   RP-Viewer global styles
+   ========================================================================= */
+
+/* Design tokens — kept in sync with the antd ConfigProvider theme in App.tsx.
+   Use these in plain CSS rules; in components prefer theme.useToken(). */
+:root {
+  --rp-primary: #1677ff;
+  --rp-primary-hover: #4096ff;
+  --rp-radius: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  background: #f5f7fa;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+::selection {
+  background: rgba(22, 119, 255, 0.15);
+}
+
+/* Custom scrollbars — thin, modern, unobtrusive */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* -------------------------------------------------------------------------
+   Prototype card
+   ------------------------------------------------------------------------- */
+.rp-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.rp-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.rp-card-icon {
+  background: linear-gradient(135deg, #f5f8ff 0%, #eef2ff 100%);
+}
+
+/* -------------------------------------------------------------------------
+   Comment pin
+   ------------------------------------------------------------------------- */
+.rp-pin {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rp-pin:hover {
+  transform: translate(-50%, -50%) scale(1.18) !important;
+}
+
+.rp-pin-active {
+  z-index: 11;
+  animation: rp-pin-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes rp-pin-pulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25),
+      0 0 0 0 rgba(22, 119, 255, 0.45);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25),
+      0 0 0 8px rgba(22, 119, 255, 0);
+  }
+}
+
+/* The temporary marker shown where a new comment will be created */
+.rp-new-marker {
+  animation: rp-marker-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rp-marker-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.25);
+    opacity: 0.8;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Comment popover / drawer list items
+   ------------------------------------------------------------------------- */
+.rp-popover {
+  animation: rp-fade-in 0.16s ease-out;
+}
+
+@keyframes rp-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rp-drawer-item {
+  transition: background 0.15s ease;
+  border-radius: 8px;
+}
+
+.rp-drawer-item:hover {
+  background: rgba(22, 119, 255, 0.06);
+}
+
+/* -------------------------------------------------------------------------
+   Header decorative glow (Home page)
+   ------------------------------------------------------------------------- */
+.rp-header-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    900px 240px at 18% -40%,
+    rgba(64, 150, 255, 0.28),
+    transparent 70%
+  );
+  pointer-events: none;
+}

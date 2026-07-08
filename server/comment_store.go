@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type Reply struct {
@@ -37,12 +36,17 @@ type CommentsResponse struct {
 	Comments  []Comment `json:"comments"`
 }
 
-func generateUUID() string {
+func generateUUID() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	if _, err := rand.Read(b); err != nil {
+		// crypto/rand failing is effectively never (e.g. /dev/urandom
+		// unavailable); surface it to the caller rather than emitting a
+		// deterministic, collision-prone zero UUID.
+		return "", err
+	}
+	b[6] = (b[6] & 0x0f) | 0x40 // version 4
+	b[8] = (b[8] & 0x3f) | 0x80 // variant 10
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
 func pageIDToFilename(pageID string) string {
@@ -50,13 +54,12 @@ func pageIDToFilename(pageID string) string {
 	return hex.EncodeToString(hash[:]) + ".json"
 }
 
-// commentsDir returns the .comments/ directory path for a prototype, with security validation
+// commentsDir returns the .comments/ directory path for a prototype, with
+// security validation to prevent escaping the prototype root.
 func (s *Server) commentsDir(prototypePath string) (string, error) {
-	absDir := filepath.Join(s.prototypeDir, filepath.Clean(prototypePath))
-	absProtoDir, _ := filepath.Abs(s.prototypeDir)
-	absTarget, _ := filepath.Abs(absDir)
-	if !strings.HasPrefix(absTarget, absProtoDir) {
-		return "", os.ErrPermission
+	absTarget, err := s.resolveSafePath(prototypePath)
+	if err != nil {
+		return "", err
 	}
 	return filepath.Join(absTarget, ".comments"), nil
 }
@@ -132,111 +135,83 @@ func (s *Server) writePageComments(prototypePath, pageID string, comments []Comm
 	return os.Rename(tmp, target)
 }
 
-func (s *Server) findAndRemoveComment(prototypePath, commentID string) error {
+// findCommentFile locates the page file containing commentID and returns the
+// decoded comments slice together with the index of the match.
+//
+// When pageID is provided, only that file is read (O(1) fast path) — this is
+// the common case since edit/delete/reply always happen on the currently
+// viewed page. When pageID is empty, every comment file is scanned as a
+// fallback (O(n)).
+func (s *Server) findCommentFile(prototypePath, commentID, pageID string) ([]Comment, int, error) {
 	dir, err := s.commentsDir(prototypePath)
+	if err != nil {
+		return nil, -1, err
+	}
+	var candidates []string
+	if pageID != "" {
+		candidates = []string{pageIDToFilename(pageID)}
+	} else {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return nil, -1, err
+		}
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
+				candidates = append(candidates, e.Name())
+			}
+		}
+	}
+	for _, name := range candidates {
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			continue
+		}
+		var comments []Comment
+		if err := json.Unmarshal(data, &comments); err != nil {
+			continue
+		}
+		for i, c := range comments {
+			if c.ID == commentID {
+				return comments, i, nil
+			}
+		}
+	}
+	return nil, -1, fmt.Errorf("comment not found: %s", commentID)
+}
+
+func (s *Server) findAndRemoveComment(prototypePath, commentID, pageID string) error {
+	comments, i, err := s.findCommentFile(prototypePath, commentID, pageID)
 	if err != nil {
 		return err
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-		filePath := filepath.Join(dir, entry.Name())
-		data, err := os.ReadFile(filePath)
-		if err != nil {
-			continue
-		}
-		var comments []Comment
-		if err := json.Unmarshal(data, &comments); err != nil {
-			continue
-		}
-		for i, c := range comments {
-			if c.ID == commentID {
-				comments = append(comments[:i], comments[i+1:]...)
-				// Use pageId from the comment itself to derive the filename
-				return s.writePageComments(prototypePath, c.PageID, comments)
-			}
-		}
-	}
-	return fmt.Errorf("comment not found: %s", commentID)
+	pageIDForFile := comments[i].PageID
+	comments = append(comments[:i], comments[i+1:]...)
+	return s.writePageComments(prototypePath, pageIDForFile, comments)
 }
 
-func (s *Server) findAndUpdateComment(prototypePath, commentID string, updateFn func(*Comment)) (*Comment, error) {
-	dir, err := s.commentsDir(prototypePath)
+func (s *Server) findAndUpdateComment(prototypePath, commentID, pageID string, updateFn func(*Comment)) (*Comment, error) {
+	comments, i, err := s.findCommentFile(prototypePath, commentID, pageID)
 	if err != nil {
 		return nil, err
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
+	updateFn(&comments[i])
+	if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
 		return nil, err
 	}
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-		filePath := filepath.Join(dir, entry.Name())
-		data, err := os.ReadFile(filePath)
-		if err != nil {
-			continue
-		}
-		var comments []Comment
-		if err := json.Unmarshal(data, &comments); err != nil {
-			continue
-		}
-		for i, c := range comments {
-			if c.ID == commentID {
-				updateFn(&comments[i])
-				// Use pageId from the comment itself to derive the filename
-				if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
-					return nil, err
-				}
-				return &comments[i], nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("comment not found: %s", commentID)
+	return &comments[i], nil
 }
 
-func (s *Server) findAndAddReply(prototypePath, commentID string, reply Reply) (*Comment, error) {
-	dir, err := s.commentsDir(prototypePath)
+func (s *Server) findAndAddReply(prototypePath, commentID, pageID string, reply Reply) (*Comment, error) {
+	comments, i, err := s.findCommentFile(prototypePath, commentID, pageID)
 	if err != nil {
 		return nil, err
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
+	if comments[i].Replies == nil {
+		comments[i].Replies = []Reply{}
+	}
+	comments[i].Replies = append(comments[i].Replies, reply)
+	if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
 		return nil, err
 	}
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
-		if err != nil {
-			continue
-		}
-		var comments []Comment
-		if err := json.Unmarshal(data, &comments); err != nil {
-			continue
-		}
-		for i, c := range comments {
-			if c.ID == commentID {
-				if comments[i].Replies == nil {
-					comments[i].Replies = []Reply{}
-				}
-				comments[i].Replies = append(comments[i].Replies, reply)
-				if err := s.writePageComments(prototypePath, comments[i].PageID, comments); err != nil {
-					return nil, err
-				}
-				return &comments[i], nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("comment not found: %s", commentID)
+	return &comments[i], nil
 }
-
-// Use time.Now for createdAt
-var _ = time.Now

@@ -5,3 +5,8 @@ web/dist
 docs
 *.md
 !web/README.md
+
+# Local prototype data and test artifacts - keep out of the build context
+prototypes
+.playwright-mcp
+home.png

@@ -19,5 +19,10 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Empty catch blocks are intentional here: accessing a cross-origin
+      // iframe's window/document can throw SecurityError, which we ignore.
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
   },
 ])

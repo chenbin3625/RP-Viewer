@@ -18,6 +18,8 @@ interface NewCommentProps {
 interface ViewCommentProps {
   mode: 'view';
   comment: Comment;
+  xPercent: number;
+  yPercent: number;
   nickname: string;
   onEdit: (content: string) => void;
   onResolve: () => void;
@@ -41,26 +43,20 @@ export default function CommentPopover(props: CommentPopoverProps) {
     pointerEvents: 'auto',
     maxHeight: '70vh',
     overflow: 'auto',
+    boxShadow: '0 6px 24px rgba(0,0,0,0.12)',
   };
 
-  if (props.mode === 'new') {
-    const left = props.xPercent > 70 ? `${props.xPercent - 2}%` : `${props.xPercent + 2}%`;
-    const translateX = props.xPercent > 70 ? 'calc(-100%)' : '0';
-    style.left = left;
-    style.top = `${props.yPercent}%`;
-    style.transform = `translate(${translateX}, -50%)`;
-  } else {
-    const left = props.comment.xPercent > 70 ? `${props.comment.xPercent - 2}%` : `${props.comment.xPercent + 2}%`;
-    const translateX = props.comment.xPercent > 70 ? 'calc(-100%)' : '0';
-    style.left = left;
-    style.top = `${props.comment.yPercent}%`;
-    style.transform = `translate(${translateX}, -50%)`;
-  }
+  // Positioning is identical for both modes; both carry xPercent/yPercent.
+  const left = props.xPercent > 70 ? `${props.xPercent - 2}%` : `${props.xPercent + 2}%`;
+  const translateX = props.xPercent > 70 ? 'calc(-100%)' : '0';
+  style.left = left;
+  style.top = `${props.yPercent}%`;
+  style.transform = `translate(${translateX}, -50%)`;
 
   // --- New comment mode ---
   if (props.mode === 'new') {
     return (
-      <Card size="small" style={style} styles={{ body: { padding: 12 } }}>
+      <Card size="small" className="rp-popover" style={style} styles={{ body: { padding: 12 } }}>
         <Space direction="vertical" style={{ width: '100%' }} size={8}>
           <Text type="secondary" style={{ fontSize: 12 }}>
             以 {props.nickname} 身份评论
@@ -97,6 +93,7 @@ export default function CommentPopover(props: CommentPopoverProps) {
   return (
     <Card
       size="small"
+      className="rp-popover"
       style={style}
       styles={{ body: { padding: 12 } }}
       title={

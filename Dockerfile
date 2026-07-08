@@ -17,14 +17,20 @@ RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o proto-viewer .
 
 # Stage 3: Minimal runtime
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata && \
+    addgroup -S app && adduser -S -G app app
 WORKDIR /app
 COPY --from=backend /app/proto-viewer .
-RUN mkdir -p /data/prototypes
+RUN mkdir -p /data/prototypes && chown -R app:app /app /data
+
+USER app
 
 ENV PROTOTYPE_DIR=/data/prototypes
 ENV PORT=8080
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT}/healthz || exit 1
 
 ENTRYPOINT ["./proto-viewer"]

@@ -1,26 +1,31 @@
+import { memo } from 'react';
+import { theme } from 'antd';
 import type { Comment } from '../api';
 
 interface CommentPinProps {
   comment: Comment;
+  xPercent: number;
+  yPercent: number;
   index: number;
   isActive: boolean;
-  onClick: () => void;
+  onActivate: (id: string) => void;
 }
 
-export default function CommentPin({ comment, index, isActive, onClick }: CommentPinProps) {
-  const bgColor = comment.resolved ? '#d9d9d9' : '#1890ff';
-  const borderColor = isActive ? '#000' : 'transparent';
+function CommentPinBase({ comment, xPercent, yPercent, index, isActive, onActivate }: CommentPinProps) {
+  const { token } = theme.useToken();
+  const bgColor = comment.resolved ? '#bfbfbf' : token.colorPrimary;
 
   return (
     <div
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onActivate(comment.id);
       }}
+      className={`rp-pin${isActive ? ' rp-pin-active' : ''}`}
       style={{
         position: 'absolute',
-        left: `${comment.xPercent}%`,
-        top: `${comment.yPercent}%`,
+        left: `${xPercent}%`,
+        top: `${yPercent}%`,
         transform: 'translate(-50%, -50%)',
         width: 28,
         height: 28,
@@ -34,16 +39,20 @@ export default function CommentPin({ comment, index, isActive, onClick }: Commen
         fontWeight: 'bold',
         cursor: 'pointer',
         pointerEvents: 'auto',
-        border: `2px solid ${borderColor}`,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-        zIndex: 10,
-        transition: 'transform 0.15s',
+        border: isActive ? `2px solid ${token.colorPrimaryActive}` : '2px solid #fff',
+        boxShadow: isActive
+          ? '0 2px 8px rgba(0,0,0,0.25), 0 0 0 2px rgba(255,255,255,0.9)'
+          : '0 2px 8px rgba(0,0,0,0.25)',
+        zIndex: isActive ? 11 : 10,
         userSelect: 'none',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translate(-50%, -50%) scale(1.2)'; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translate(-50%, -50%)'; }}
     >
       {index}
     </div>
   );
 }
+
+// memoized: props are stable (original comment ref + primitive x/y + stable
+// onActivate callback), so pins skip re-rendering on unrelated overlay updates.
+const CommentPin = memo(CommentPinBase);
+export default CommentPin;

@@ -28,13 +28,9 @@ type BrowseResponse struct {
 }
 
 func (s *Server) scan(relativePath string) (*BrowseResponse, error) {
-	absDir := filepath.Join(s.prototypeDir, filepath.Clean(relativePath))
-
-	// Security: ensure we don't escape the prototype dir
-	absProtoDir, _ := filepath.Abs(s.prototypeDir)
-	absTarget, _ := filepath.Abs(absDir)
-	if !strings.HasPrefix(absTarget, absProtoDir) {
-		return nil, os.ErrPermission
+	absTarget, err := s.resolveSafePath(relativePath)
+	if err != nil {
+		return nil, err
 	}
 
 	entries, err := os.ReadDir(absTarget)

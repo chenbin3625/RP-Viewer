@@ -81,8 +81,14 @@ export async function createComment(prototype: string, payload: CreateCommentPay
   return res.json();
 }
 
-export async function updateComment(prototype: string, id: string, updates: Partial<Pick<Comment, 'content' | 'resolved'>>): Promise<Comment> {
+export async function updateComment(
+  prototype: string,
+  id: string,
+  page: string,
+  updates: Partial<Pick<Comment, 'content' | 'resolved'>>,
+): Promise<Comment> {
   const params = new URLSearchParams({ prototype, id });
+  if (page) params.set('page', page);
   const res = await fetch(`/api/comments?${params}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -92,14 +98,22 @@ export async function updateComment(prototype: string, id: string, updates: Part
   return res.json();
 }
 
-export async function deleteComment(prototype: string, id: string): Promise<void> {
+export async function deleteComment(prototype: string, id: string, page: string): Promise<void> {
   const params = new URLSearchParams({ prototype, id });
+  if (page) params.set('page', page);
   const res = await fetch(`/api/comments?${params}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Delete comment failed: ${res.statusText}`);
 }
 
-export async function addReply(prototype: string, parentId: string, content: string, author: string): Promise<Comment> {
+export async function addReply(
+  prototype: string,
+  parentId: string,
+  page: string,
+  content: string,
+  author: string,
+): Promise<Comment> {
   const params = new URLSearchParams({ prototype, parentId });
+  if (page) params.set('page', page);
   const res = await fetch(`/api/comments?${params}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

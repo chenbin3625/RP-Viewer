@@ -15,14 +15,28 @@ export default function Home() {
   const isRoot = !currentPath;
 
   const [data, setData] = useState<BrowseResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedPath, setLoadedPath] = useState<string | null>(null);
+  // Derive loading from the path we last finished loading for, instead of
+  // calling setState synchronously inside the effect (which causes cascading
+  // renders). loading is true until the fetch for currentPath completes.
+  const loading = loadedPath !== currentPath;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     browse(currentPath)
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (cancelled) return;
+        setData(res);
+        setLoadedPath(currentPath);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error(e);
+        setLoadedPath(currentPath);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [currentPath]);
 
   const handleItemClick = (item: BrowseResponse['items'][0]) => {
@@ -64,25 +78,31 @@ export default function Home() {
   return (
     <div style={{ minHeight: '100vh', background: '#f5f7fa' }}>
       {/* Header area */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-        padding: isRoot ? '48px 24px 40px' : '24px 24px 20px',
-        transition: 'padding 0.3s',
-      }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div
+        className="rp-header-glow"
+        style={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          padding: isRoot ? '52px 24px 44px' : '26px 24px 22px',
+          transition: 'padding 0.3s',
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
           {isRoot ? (
             <>
-              <Title level={2} style={{ color: '#fff', marginBottom: 4, fontWeight: 700, letterSpacing: 1 }}>
+              <Title level={2} style={{ color: '#fff', marginBottom: 6, fontWeight: 700, letterSpacing: 1.5 }}>
                 Seclead-RP
               </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14 }}>
                 本地原型在线查看及评论
               </Text>
             </>
           ) : (
             <>
-              <Breadcrumb items={breadcrumbItems} style={{ marginBottom: 8 }}
-                separator={<span style={{ color: 'rgba(255,255,255,0.4)' }}>/</span>}
+              <Breadcrumb
+                items={breadcrumbItems}
+                style={{ marginBottom: 8 }}
+                separator={<span style={{ color: 'rgba(255,255,255,0.35)' }}>/</span>}
               />
               <Title level={4} style={{ color: '#fff', marginBottom: 0 }}>
                 {pageTitle}
@@ -95,7 +115,10 @@ export default function Home() {
       {/* Content */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 48px' }}>
         {data?.items.length === 0 ? (
-          <Empty description="此目录下没有原型或子文件夹" style={{ paddingTop: 80 }} />
+          <Empty
+            description="此目录下没有原型或子文件夹"
+            style={{ paddingTop: 80 }}
+          />
         ) : (
           <Row gutter={[16, 16]}>
             {data?.items.map((item) => (

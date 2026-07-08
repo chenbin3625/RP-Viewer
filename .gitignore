@@ -3,3 +3,10 @@ web/node_modules/
 web/dist/
 .DS_Store
 .comments/
+
+# Local prototype data (user content, do not commit)
+prototypes/
+
+# Stray screenshots / test artifacts
+home.png
+.playwright-mcp/

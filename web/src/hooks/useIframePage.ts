@@ -14,12 +14,33 @@ export function useIframePage(iframeRef: RefObject<HTMLIFrameElement | null>) {
       } catch {}
     };
 
-    iframe.addEventListener('load', extractPageId);
-    const interval = setInterval(extractPageId, 500);
+    // Attach hashchange/popstate listeners so SPA navigations inside the
+    // iframe (Axure/Mockplus) are picked up immediately instead of waiting
+    // for the next poll. Re-attached on each load because cross-document
+    // navigation swaps the iframe's Window.
+    const attach = () => {
+      extractPageId();
+      try {
+        const win = iframe.contentWindow;
+        win?.addEventListener('hashchange', extractPageId);
+        win?.addEventListener('popstate', extractPageId);
+      } catch {}
+    };
+
+    iframe.addEventListener('load', attach);
+    attach();
+
+    // Fallback poll (guard: no re-render when href is unchanged) for any
+    // navigation the events above miss.
+    const interval = setInterval(extractPageId, 1500);
 
     return () => {
-      iframe.removeEventListener('load', extractPageId);
+      iframe.removeEventListener('load', attach);
       clearInterval(interval);
+      try {
+        iframe.contentWindow?.removeEventListener('hashchange', extractPageId);
+        iframe.contentWindow?.removeEventListener('popstate', extractPageId);
+      } catch {}
     };
   }, [iframeRef]);
 

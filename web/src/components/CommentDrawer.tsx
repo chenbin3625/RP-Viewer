@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Drawer, List, Typography, Tag, Space, Empty, Badge } from 'antd';
+import { Drawer, List, Typography, Tag, Space, Empty, Badge, theme } from 'antd';
 import { MessageOutlined } from '@ant-design/icons';
 import type { Comment } from '../api';
 
@@ -51,6 +51,8 @@ function formatPageLabel(pageId: string): string {
 }
 
 export default function CommentDrawer({ open, onClose, allComments, onNavigate, onRefresh }: CommentDrawerProps) {
+  const { token } = theme.useToken();
+
   useEffect(() => {
     if (open) onRefresh();
   }, [open, onRefresh]);
@@ -76,7 +78,7 @@ export default function CommentDrawer({ open, onClose, allComments, onNavigate, 
           <MessageOutlined />
           <span>所有评论</span>
           {unresolvedCount > 0 && (
-            <Badge count={unresolvedCount} style={{ backgroundColor: '#1890ff' }} />
+            <Badge count={unresolvedCount} style={{ backgroundColor: token.colorPrimary }} />
           )}
         </Space>
       }
@@ -97,10 +99,10 @@ export default function CommentDrawer({ open, onClose, allComments, onNavigate, 
               dataSource={group.comments}
               renderItem={(comment) => (
                 <List.Item
+                  className="rp-drawer-item"
                   style={{
                     cursor: 'pointer',
                     padding: '8px 12px',
-                    borderRadius: 6,
                     opacity: comment.resolved ? 0.5 : 1,
                   }}
                   onClick={() => {

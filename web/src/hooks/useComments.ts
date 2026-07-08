@@ -38,30 +38,30 @@ export function useComments(prototypePath: string, currentPageId: string) {
   }, [prototypePath]);
 
   const editComment = useCallback(async (id: string, content: string) => {
-    const updated = await updateComment(prototypePath, id, { content });
+    const updated = await updateComment(prototypePath, id, currentPageId, { content });
     setPageComments((prev) =>
       prev.map((c) => (c.id === id ? { ...c, content: updated.content } : c))
     );
-  }, [prototypePath]);
+  }, [prototypePath, currentPageId]);
 
   const toggleResolved = useCallback(async (id: string, resolved: boolean) => {
-    await updateComment(prototypePath, id, { resolved });
+    await updateComment(prototypePath, id, currentPageId, { resolved });
     setPageComments((prev) =>
       prev.map((c) => (c.id === id ? { ...c, resolved } : c))
     );
-  }, [prototypePath]);
+  }, [prototypePath, currentPageId]);
 
   const removeComment = useCallback(async (id: string) => {
-    await deleteComment(prototypePath, id);
+    await deleteComment(prototypePath, id, currentPageId);
     setPageComments((prev) => prev.filter((c) => c.id !== id));
-  }, [prototypePath]);
+  }, [prototypePath, currentPageId]);
 
   const replyToComment = useCallback(async (parentId: string, content: string, author: string) => {
-    const updated = await addReply(prototypePath, parentId, content, author);
+    const updated = await addReply(prototypePath, parentId, currentPageId, content, author);
     setPageComments((prev) =>
       prev.map((c) => (c.id === parentId ? updated : c))
     );
-  }, [prototypePath]);
+  }, [prototypePath, currentPageId]);
 
   return {
     pageComments,

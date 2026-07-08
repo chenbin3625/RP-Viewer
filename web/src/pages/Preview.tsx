@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Typography, Space, Breadcrumb, Tooltip, Badge, Input, Modal } from 'antd';
+import { Button, Breadcrumb, Tooltip, Badge, Input, Modal } from 'antd';
 import { ArrowLeftOutlined, HomeOutlined, MessageOutlined, UnorderedListOutlined, UserOutlined } from '@ant-design/icons';
 import { useIframePage } from '../hooks/useIframePage';
 import { useComments } from '../hooks/useComments';
@@ -8,8 +8,6 @@ import { useNickname } from '../hooks/useNickname';
 import CommentOverlay from '../components/CommentOverlay';
 import CommentDrawer from '../components/CommentDrawer';
 import type { Comment } from '../api';
-
-const { Text } = Typography;
 
 export default function Preview() {
   const navigate = useNavigate();
@@ -48,12 +46,47 @@ export default function Preview() {
   };
 
   const handleNavigateToComment = (comment: Comment) => {
-    try {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.location.href = comment.pageId;
+    const iframe = iframeRef.current;
+    const win = iframe?.contentWindow;
+    if (!iframe || !win) return;
+
+    const scrollToComment = () => {
+      try {
+        // Scrolling the iframe's document (an external system, not React
+        // state). The immutability rule traces `win` back to the iframe ref
+        // and can't tell this apart from ref mutation, hence the disable.
+        // eslint-disable-next-line react-hooks/immutability
+        const doc = win.document;
+        const target = comment.scrollTop || 0;
+        doc.documentElement.scrollTop = target;
+        doc.body.scrollTop = target;
+      } catch (e) {
+        console.error('Failed to scroll to comment:', e);
       }
+    };
+
+    // If already on the target page, just scroll. Otherwise navigate and
+    // scroll once the new page has loaded.
+    let currentHref = '';
+    try {
+      currentHref = win.location.href;
+    } catch {}
+
+    if (currentHref === comment.pageId) {
+      scrollToComment();
+      return;
+    }
+
+    const onLoad = () => {
+      iframe.removeEventListener('load', onLoad);
+      scrollToComment();
+    };
+    iframe.addEventListener('load', onLoad);
+    try {
+      win.location.href = comment.pageId;
     } catch (e) {
       console.error('Failed to navigate to comment:', e);
+      iframe.removeEventListener('load', onLoad);
     }
   };
 
@@ -92,21 +125,29 @@ export default function Preview() {
       <div
         style={{
           height: TOOLBAR_HEIGHT,
-          padding: '0 12px',
+          padding: '0 16px',
           display: 'flex',
           alignItems: 'center',
           borderBottom: '1px solid #f0f0f0',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           background: '#fff',
           flexShrink: 0,
-          gap: 8,
+          gap: 12,
+          zIndex: 2,
         }}
       >
-        <Space size="middle">
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            返回
-          </Button>
-          <Text strong>{prototypeName}</Text>
-        </Space>
+        <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleBack} size="small" />
+
+        <Breadcrumb
+          items={breadcrumbItems}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        />
 
         <div style={{ flex: 1 }} />
 
@@ -132,6 +173,11 @@ export default function Preview() {
               icon={<MessageOutlined />}
               onClick={() => setCommentMode(!commentMode)}
               size="small"
+              style={
+                commentMode
+                  ? { boxShadow: '0 0 0 3px rgba(22,119,255,0.18)' }
+                  : undefined
+              }
             >
               {commentMode ? '退出评论' : '评论'}
             </Button>
@@ -148,8 +194,6 @@ export default function Preview() {
             全部评论
           </Button>
         </Tooltip>
-
-        <Breadcrumb items={breadcrumbItems} style={{ marginLeft: 8 }} />
       </div>
 
       {/* Iframe container with comment overlay */}
