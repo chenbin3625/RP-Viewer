@@ -14,7 +14,7 @@ permissions:
 env:
   IMAGE_NAME: chenbin3625/rp-viewer
   README_FILE: .dockerhub/README.md
-  SHORT_DESCRIPTION: "Self-hosted prototype review platform with iframe preview and pinned comments | 自托管原型在线查看及评论平台"
+  SHORT_DESCRIPTION: "Self-hosted prototype review platform | 自托管原型评审平台"
 
 jobs:
   update:
