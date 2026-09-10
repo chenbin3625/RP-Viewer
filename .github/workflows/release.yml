@@ -24,7 +24,7 @@ jobs:
       - name: Build frontend
         run: cd web && npm ci && npm run build
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: web-dist
           path: web/dist/
@@ -84,7 +84,7 @@ jobs:
             tar czf "dist/${ARCHIVE_NAME}.tar.gz" proto-viewer config.yaml
           fi
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/
