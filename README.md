@@ -1,5 +1,7 @@
 # RP-Viewer
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Release](https://img.shields.io/github/v/release/chenbin3625/RP-Viewer)](https://github.com/chenbin3625/RP-Viewer/releases) [![Docker Pulls](https://img.shields.io/docker/pulls/chenbin3625/rp-viewer)](https://hub.docker.com/r/chenbin3625/rp-viewer)
+
 A self-hosted prototype review platform. Automatically scans prototype folders exported from tools like Axure and Mockplus, providing card-based browsing, iframe preview, and Figma-style pinned comments.
 
 ## Screenshots
@@ -152,6 +154,10 @@ make clean        # Clean build artifacts
 - **Backend**: Go (net/http, embed, gzip)
 - **Frontend**: React + TypeScript + Ant Design + React Router
 - **Deployment**: Single binary with embedded frontend assets
+
+## License
+
+This project is released under the [MIT License](LICENSE).
 
 ---
 
@@ -309,3 +315,7 @@ make clean        # 清理构建产物
 - **后端**: Go (net/http, embed, gzip)
 - **前端**: React + TypeScript + Ant Design + React Router
 - **部署**: 单二进制文件，前端资源内嵌
+
+## 许可证
+
+本项目以 [MIT License](LICENSE) 授权。
